@@ -549,6 +549,19 @@ const UTXOVisualization = () => {
           <li>A small amount is required for transaction fees</li>
         </ol>
       </div>
+      <div className="text-center mt-10">
+        <p>
+          Made with ❤️ by{" "}
+          <a
+            target="_blank"
+            rel="noreferrer noopener"
+            href="https://github.com/miralsuthar"
+            className="text-blue-500 underline"
+          >
+            Miral
+          </a>
+        </p>
+      </div>
     </div>
   );
 };
