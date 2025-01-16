@@ -1,7 +1,31 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle } from "lucide-react";
-// import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const ADDRESSES = {
+  A: "Address 1 (Alice)",
+  B: "Address 2 (Bob)",
+} as const;
+
+interface UTXO {
+  id: number;
+  value: number;
+  address: keyof typeof ADDRESSES;
+}
+
+interface Transaction {
+  id: number;
+  from: keyof typeof ADDRESSES;
+  to: keyof typeof ADDRESSES;
+  inputs: UTXO[];
+  outputs: UTXO[];
+}
+
+interface TransactionFlowProps {
+  inputs: UTXO[];
+  amount: number;
+  change: number;
+  onComplete: () => void;
+}
 
 const UTXOVisualization = () => {
   const [addresses] = useState({
@@ -9,7 +33,7 @@ const UTXOVisualization = () => {
     B: "Address 2 (Bob)",
   });
 
-  const [utxos, setUtxos] = useState({
+  const [utxos, setUtxos] = useState<Record<keyof typeof ADDRESSES, UTXO[]>>({
     A: [
       { id: 1, value: 10, address: "A" },
       { id: 2, value: 5, address: "A" },
@@ -21,20 +45,24 @@ const UTXOVisualization = () => {
     ],
   });
 
-  const [selectedUTXOs, setSelectedUTXOs] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [sendingAddress, setSendingAddress] = useState(null);
-  const [receivingAddress, setReceivingAddress] = useState(null);
-  const [amount, setAmount] = useState("");
-  const [error, setError] = useState("");
+  const [selectedUTXOs, setSelectedUTXOs] = useState<UTXO[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [sendingAddress, setSendingAddress] = useState<
+    keyof typeof ADDRESSES | null
+  >(null);
+  const [receivingAddress, setReceivingAddress] = useState<
+    keyof typeof ADDRESSES | null
+  >(null);
+  const [amount, setAmount] = useState<string>("");
+  // const [error, setError] = useState("");
 
   const totalSelected = selectedUTXOs.reduce(
     (sum, utxo) => sum + utxo.value,
     0,
   );
 
-  const handleUTXOSelect = (utxo) => {
-    setError(""); // Clear any existing errors
+  const handleUTXOSelect = (utxo: UTXO) => {
+    // setError(""); // Clear any existing errors
     if (!sendingAddress) {
       setSendingAddress(utxo.address);
       setSelectedUTXOs([utxo]);
@@ -51,41 +79,46 @@ const UTXOVisualization = () => {
     }
   };
 
-  const handleAddressSelect = (address) => {
+  const handleAddressSelect = (address: keyof typeof ADDRESSES) => {
     if (address !== sendingAddress) {
       setReceivingAddress(address);
-      setError("");
+      // setError("");
     }
   };
 
-  const validateTransaction = (sendAmount) => {
+  const validateTransaction = (sendAmount: number) => {
     if (!sendAmount || isNaN(sendAmount)) {
-      setError("Please enter a valid amount");
+      // setError("Please enter a valid amount");
       return false;
     }
 
     if (sendAmount <= 0) {
-      setError("Amount must be greater than 0");
+      // setError("Amount must be greater than 0");
       return false;
     }
 
     if (sendAmount >= totalSelected) {
-      setError("Insufficient funds for transaction fee");
+      // setError("Insufficient funds for transaction fee");
       return false;
     }
 
     const minimumChange = 0.001; // Minimum required change for transaction fee
     if (totalSelected - sendAmount < minimumChange) {
-      setError(`Minimum ${minimumChange} BTC required for transaction fee`);
+      // setError(`Minimum ${minimumChange} BTC required for transaction fee`);
       return false;
     }
 
     return true;
   };
 
-  const TransactionFlow = ({ inputs, amount, change, onComplete }) => {
+  const TransactionFlow = ({
+    inputs,
+    amount,
+    change,
+    onComplete,
+  }: TransactionFlowProps) => {
     // Function to handle outside clicks
-    const handleBackdropClick = (e) => {
+    const handleBackdropClick = (e: any) => {
       if (e.target === e.currentTarget) {
         onComplete();
       }
@@ -337,7 +370,7 @@ const UTXOVisualization = () => {
       setSendingAddress(null);
       setReceivingAddress(null);
       setAmount("");
-      setError("");
+      // setError("");
     }, 3000);
   };
 
@@ -372,12 +405,16 @@ const UTXOVisualization = () => {
             <h2 className="text-xl font-semibold mb-4">
               {name}
               <span className="text-sm font-normal ml-2">
-                (Total: {utxos[key].reduce((sum, utxo) => sum + utxo.value, 0)}{" "}
+                (Total:{" "}
+                {utxos[key as keyof typeof ADDRESSES].reduce(
+                  (sum: number, utxo: UTXO) => sum + utxo.value,
+                  0,
+                )}{" "}
                 BTC)
               </span>
             </h2>
             <div className="flex flex-wrap gap-4 mb-4">
-              {utxos[key].map((utxo) => (
+              {utxos[key as keyof typeof ADDRESSES].map((utxo: UTXO) => (
                 <motion.div
                   key={utxo.id}
                   whileHover={{ scale: 1.05 }}
@@ -400,7 +437,9 @@ const UTXOVisualization = () => {
             </div>
             {sendingAddress && sendingAddress !== key && !receivingAddress && (
               <button
-                onClick={() => handleAddressSelect(key)}
+                onClick={() =>
+                  handleAddressSelect(key as keyof typeof ADDRESSES)
+                }
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
               >
                 Select as Recipient
@@ -417,7 +456,7 @@ const UTXOVisualization = () => {
             value={amount}
             onChange={(e) => {
               setAmount(e.target.value);
-              setError("");
+              // setError("");
             }}
             placeholder="Enter amount to send"
             className="w-full px-4 py-2 border rounded-lg"
@@ -426,7 +465,7 @@ const UTXOVisualization = () => {
         </div>
         <div className="text-sm text-gray-600">
           Selected: {totalSelected} BTC
-          {amount && !isNaN(amount) && (
+          {amount && !isNaN(Number(amount)) && (
             <span className="ml-2">
               | Change: {(totalSelected - parseFloat(amount)).toFixed(3)} BTC
             </span>
